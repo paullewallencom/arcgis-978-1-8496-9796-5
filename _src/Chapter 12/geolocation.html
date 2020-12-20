@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Create a Map</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1"> 
+  <link rel="stylesheet" href="http://js.arcgis.com/3.7/js/dojo/dijit/themes/claro/claro.css">
+  <link rel="stylesheet" href="http://js.arcgis.com/3.7/js/esri/css/esri.css">
+  
+  <style>
+    html, body, #mapDiv {
+      padding: 0;
+      margin: 0;
+      height: 100%;
+    }
+  </style>
+  
+  <script src="http://js.arcgis.com/3.7compact/"></script>
+  <script>
+   require([
+        "dojo/dom",
+        "esri/map", 
+		"esri/geometry/Point",
+        "esri/symbols/SimpleMarkerSymbol",
+        "esri/graphic",
+        "esri/geometry/webMercatorUtils",
+        "dojo/_base/Color",
+        "dojo/domReady!"
+      ], function(dom, Map, Point, SimpleMarkerSymbol, Graphic, webMercatorUtils, Color) {
+    
+         map = new Map("mapDiv", { 
+          basemap: "streets",
+          center:[-117.148, 32.706], //long, lat
+          zoom: 12
+        });
+        
+        if (navigator.geolocation){  
+           navigator.geolocation.getCurrentPosition(zoomToLocation, locationError);
+        }
+        
+        function zoomToLocation(location) {
+          var symbol = new SimpleMarkerSymbol();
+       
+          symbol.setStyle(SimpleMarkerSymbol.STYLE_SQUARE);
+          symbol.setColor(new Color([153,0,51,0.75]));
+	  
+          var pt = webMercatorUtils.geographicToWebMercator(new Point(location.coords.longitude, location.coords.latitude)); 
+          var graphic = new Graphic(pt, symbol);	
+          map.graphics.add(graphic);		 
+          map.centerAndZoom(pt, 16);
+        }
+        
+        function locationError(error) {
+          switch (error.code) {
+	          case error.PERMISSION_DENIED:
+	            alert("Location not provided");
+	            break;
+	          case error.POSITION_UNAVAILABLE:
+	            alert("Current location not available");
+	            break;
+	          case error.TIMEOUT:
+	            alert("Timeout");
+	            break;
+	          default:
+	            alert("unknown error");
+	            break;
+	         }
+        }
+        
+        
+      });
+  </script>
+
+</head>
+<body>
+  <div id="mapDiv"></div>
+</body>
+</html>

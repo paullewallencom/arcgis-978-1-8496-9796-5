@@ -1,0 +1,84 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"
+   "http://www.w3.org/TR/html4/strict.dtd">
+
+<html lang="en">
+  <head>
+   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=7, IE=9, IE=10">
+    <!--The viewport meta tag is used to improve the presentation and behavior of the samples 
+      on iOS devices-->
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=yes">
+
+    <title>Service Area Task</title>
+    <link rel="stylesheet" href="http://js.arcgis.com/3.7/js/esri/css/esri.css">
+ 
+    <script src="http://js.arcgis.com/3.7/"></script>
+	
+	  <script>
+    require([
+      "esri/map",
+	  "esri/tasks/RouteParameters",
+	  "esri/tasks/RouteTask",
+	  "esri/tasks/RouteResult",
+	  "esri/tasks/FeatureSet",
+	  "esri/symbols/SimpleMarkerSymbol",
+	  "esri/symbols/SimpleLineSymbol",
+	  "esri/graphic",
+	  "dojo/_base/Color"
+     ],
+    function(Map, RouteParameters, RouteTask, RouteResult, FeatureSet, SimpleMarkerSymbol, SimpleLineSymbol, Graphic, Color ){
+	  var map, routeTask, routeParams;
+      var stopSymbol, routeSymbol, lastStop;
+	  
+      map = new Map("mapDiv", { 
+        basemap: "streets",
+        center:[-123.379, 48.418], //long, lat
+        zoom: 14
+      });
+	  
+	  map.on("click", addStop);
+	  routeTask = new RouteTask("http://tasks.arcgisonline.com/ArcGIS/rest/services/NetworkAnalysis/ESRI_Route_NA/NAServer/Route");
+      routeParams = new RouteParameters();
+      routeParams.stops = new FeatureSet();
+      routeParams.outSpatialReference = {"wkid":4326};
+	  
+	  routeTask.on("solve-complete", showRoute);
+	  routeTask.on("error", errorHandler);
+	  
+	  stopSymbol = new SimpleMarkerSymbol().setStyle(SimpleMarkerSymbol.STYLE_CROSS).setSize(15);
+      stopSymbol.outline.setWidth(4);
+      routeSymbol = new SimpleLineSymbol().setColor(new Color([0,0,255,0.5])).setWidth(5);
+	  
+	  function addStop(evt) {
+	    var stop = map.graphics.add(new Graphic(evt.mapPoint, stopSymbol));
+        routeParams.stops.features.push(stop);
+
+        if (routeParams.stops.features.length >= 2) {
+          routeTask.solve(routeParams);
+          lastStop = routeParams.stops.features.splice(0, 1)[0];
+        }
+	  }
+	  
+	  function showRoute(solveResult) {
+        map.graphics.add(solveResult.result.routeResults[0].route.setSymbol(routeSymbol));	
+      }
+	  
+	  function errorHandler(err) {
+        alert("An error occured\n" + err.message + "\n" + err.details.join("\n"));
+
+        routeParams.stops.features.splice(0, 0, lastStop);
+        map.graphics.remove(routeParams.stops.features.splice(1, 1)[0]);
+      }
+	  
+	  
+	});
+    </script>
+	
+	
+
+  </head>
+  <body class="claro">
+    <div id="mapDiv" style="width:600px; height:400px; border:1px solid #000;"></div>
+     <p>Click on the map to add stops to the route. The route from the last stop to the newly added stop is calculated. If a stop is not reachable, it is removed and the last valid point is set as the starting point.</p>
+  </body>
+</html>
